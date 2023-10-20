@@ -3,7 +3,6 @@
 #include <string.h>
 #include <Arduino.h>
 
-//#include <wolfssl/wolfcrypt/sha256.h>
 #include <esp_log.h>
 #include <esp_timer.h>
 
@@ -345,66 +344,3 @@ IRAM_ATTR int nerd_double_sha2(nerd_sha256* midstate, uint8_t* dataIn, uint8_t* 
 }
 
 
-
-IRAM_ATTR int nerd_double_sha(nerd_sha256* midstate, uint8_t* data, uint8_t* doubleHash)
-{
-    IRAM_DATA_ATTR nerd_sha256 sha256;
-    //nerd_sha256 sha256_2;
-    int ret = 0;
-    uint32_t blocksLen;
-    uint8_t* local;
-
-    //Copy current context
-    sha256 = *midstate;
-
-    // ----- 1rst SHA ------------
-    //*********** ShaUpdate ***********
-    local = (uint8_t*)sha256.buffer;
-    XMEMCPY(local, data, 16); //Pending bytes to make the sha256
-    //*********** end update ***********
-
-    //*********** Init SHA_finish ***********
-
-    local[16] = 0x80; // add 1 
-    //ADD final zeros
-    XMEMSET(&local[17], 0, 39); //NERD_PAD_SIZE - sha256.buffLen);
-
-    // put lengths in bits 
-    sha256.hiLen = 0;
-    sha256.loLen = 640;
-
-    ByteReverseWords(sha256.buffer, sha256.buffer, NERD_BLOCK_SIZE);
-
-    // ! length ordering dependent on digest endian type ! 
-    XMEMCPY(&local[NERD_PAD_SIZE], &sha256.hiLen, sizeof(uint32_t));
-    XMEMCPY(&local[NERD_PAD_SIZE + sizeof(uint32_t)], &sha256.loLen, sizeof(uint32_t));
-
-    XTRANSFORM(&sha256, (const uint8_t*)local);
-
-    //*********** end SHA_finish ***********
-
-    // ----- 2nd SHA ------------
-    //Init SHA context again
-    IRAM_DATA_ATTR nerd_sha256 secondSha256 = {
-        // Init with initial sha data
-        .digest = {0x6A09E667L, 0xBB67AE85L, 0x3C6EF372L, 0xA54FF53AL, 0x510E527FL, 0x9B05688CL, 0x1F83D9ABL, 0x5BE0CD19L},    
-        // Init with past SHA done
-        .buffer = {sha256.digest[0],sha256.digest[1],sha256.digest[2],sha256.digest[3],sha256.digest[4],sha256.digest[5],sha256.digest[6],sha256.digest[7],
-                   0x80000000,0,0,0,0,0,0,0},    // Init with past hash and 0x80
-        .buffLen = 32,     // Bytes to hash
-        .loLen = 256,      // Init to 256 bits
-        .hiLen = 0,       // Inicializar a cero
-        .heap = NULL      // Inicializar a NULL
-    };
-    
-    local = (uint8_t*)secondSha256.buffer;
-
-    // ! length ordering dependent on digest endian type ! 
-    XMEMCPY(&local[NERD_PAD_SIZE + sizeof(uint32_t)], &secondSha256.loLen, sizeof(uint32_t));
-
-    XTRANSFORM(&secondSha256, (const uint8_t*)local);
-
-    ByteReverseWords((uint32_t*)doubleHash, secondSha256.digest, NERD_DIGEST_SIZE);
-    
-    return 0;
-}

@@ -5,6 +5,7 @@
 #include <nvs_flash.h>
 #include <nvs.h>
 #include "ShaTests/nerdSHA256.h"
+//#include "ShaTests/nerdSHA256plus.h"
 #include "stratum.h"
 #include "mining.h"
 #include "utils.h"

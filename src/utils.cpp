@@ -1,22 +1,19 @@
 
 #include <Arduino.h>
+#include <string.h>
+#include <stdio.h>
+
 #include "utils.h"
 #include "mining.h"
 #include "stratum.h"
 #include "mbedtls/sha256.h"
 
-#include <string.h>
-#include <stdio.h>
-
 #ifndef bswap_16
-#define bswap_16(a) ((((uint16_t) (a) << 8) & 0xff00) | (((uint16_t) (a) >> 8) & 0xff))
+#define bswap_16(a) __builtin_bswap16(a)
 #endif
 
 #ifndef bswap_32
-#define bswap_32(a) ((((uint32_t) (a) << 24) & 0xff000000) | \
-		     (((uint32_t) (a) << 8) & 0xff0000) | \
-     		     (((uint32_t) (a) >> 8) & 0xff00) | \
-     		     (((uint32_t) (a) >> 24) & 0xff))
+#define bswap_32(a) __builtin_bswap32(a)
 #endif
 
 uint32_t swab32(uint32_t v) {

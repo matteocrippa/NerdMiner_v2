@@ -1,23 +1,8 @@
-
-#include <Arduino.h>
-#include <string.h>
-#include <stdio.h>
-
 #include "utils.h"
-#include "mining.h"
-#include "stratum.h"
 #include "mbedtls/sha256.h"
 
-#ifndef bswap_16
-#define bswap_16(a) __builtin_bswap16(a)
-#endif
-
-#ifndef bswap_32
-#define bswap_32(a) __builtin_bswap32(a)
-#endif
-
 uint32_t swab32(uint32_t v) {
-    return bswap_32(v);
+    return __builtin_bswap32(v);
 }
 
 uint8_t hex(char ch) {

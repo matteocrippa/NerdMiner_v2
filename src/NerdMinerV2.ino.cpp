@@ -12,6 +12,7 @@
 #include "monitor.h"
 #include "drivers/displays/display.h"
 #include "drivers/storage/SDCard.h"
+#include "version.h"
 
 //3 seconds WDT
 #define WDT_TIMEOUT 3
@@ -77,6 +78,7 @@ void setup()
 
   /******** INIT NERDMINER ************/
   Serial.println("NerdMiner v2 starting......");
+  Serial.println(CURRENT_VERSION);
 
   /******** INIT DISPLAY ************/
   initDisplay();

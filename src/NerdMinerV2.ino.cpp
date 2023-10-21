@@ -90,7 +90,12 @@ void setup()
   /******** SHOW LED INIT STATUS (devices without screen) *****/
   mMonitor.NerdStatus = NM_waitingConfig;
   doLedStuff(0);
-  
+
+  /******** Disable ESP32-S3 RGB LED *****/
+  #ifdef RGB_BUILTIN
+  digitalWrite(RGB_BUILTIN, LOW);
+  #endif
+
   /******** INIT WIFI ************/
   init_WifiManager();
 

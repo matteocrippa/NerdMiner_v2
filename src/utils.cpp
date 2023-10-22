@@ -33,6 +33,7 @@ int to_byte_array(const char *in, size_t in_size, uint8_t *out) {
 
 void swap_endian_words(const char * hex_words, uint8_t * output) {
     size_t hex_length = strlen(hex_words);
+    
     if (hex_length % 8 != 0) {
         fprintf(stderr, "Must be 4-byte word aligned\n");
         exit(EXIT_FAILURE);
@@ -42,12 +43,12 @@ void swap_endian_words(const char * hex_words, uint8_t * output) {
 
     for (size_t i = 0; i < binary_length; i += 4) {
         for (int j = 0; j < 4; j++) {
-            unsigned int byte_val;
-            sscanf(hex_words + (i + j) * 2, "%2x", &byte_val);
-            output[i + (3 - j)] = byte_val;
+            unsigned int byte_val = (uint8_t)strtol(hex_words + i + (3 - j) * 2, NULL, 16);
+            output[i + j] = byte_val;
         }
     }
 }
+
 
 void reverse_bytes(uint8_t * data, size_t len) {
     for (int i = 0; i < len / 2; ++i) {
@@ -59,25 +60,38 @@ void reverse_bytes(uint8_t * data, size_t len) {
 
 static const double truediffone = 26959535291011309493156476344723991336010898738574164086137773096960.0;
 /* Converts a little endian 256 bit value to a double */
+// double le256todouble(const void *target)
+// {
+// 	uint64_t *data64;
+// 	double dcut64;
+
+// 	data64 = (uint64_t *)(target + 24);
+// 	dcut64 = *data64 * 6277101735386680763835789423207666416102355444464034512896.0;
+
+// 	data64 = (uint64_t *)(target + 16);
+// 	dcut64 += *data64 * 340282366920938463463374607431768211456.0;
+
+// 	data64 = (uint64_t *)(target + 8);
+// 	dcut64 += *data64 * 18446744073709551616.0;
+
+// 	data64 = (uint64_t *)(target);
+// 	dcut64 += *data64;
+
+// 	return dcut64;
+// }
+
 double le256todouble(const void *target)
 {
-	uint64_t *data64;
-	double dcut64;
+    uint64_t *data64 = (uint64_t *)target;
+    double dcut64 = 0.0;
 
-	data64 = (uint64_t *)(target + 24);
-	dcut64 = *data64 * 6277101735386680763835789423207666416102355444464034512896.0;
+    for (int i = 0; i < 4; i++) {
+        dcut64 += ((double)data64[i]) * (1.0 / (1ULL << (i * 64)));
+    }
 
-	data64 = (uint64_t *)(target + 16);
-	dcut64 += *data64 * 340282366920938463463374607431768211456.0;
-
-	data64 = (uint64_t *)(target + 8);
-	dcut64 += *data64 * 18446744073709551616.0;
-
-	data64 = (uint64_t *)(target);
-	dcut64 += *data64;
-
-	return dcut64;
+    return dcut64;
 }
+
 
 double diff_from_target(void *target)
 {
@@ -382,58 +396,35 @@ miner_data calculateMiningData(mining_subscribe& mWorker, mining_job mJob){
  * associated suitable for Mega, Giga etc. Buf array needs to be long enough */
 void suffix_string(double val, char *buf, size_t bufsiz, int sigdigits)
 {
-	const double kilo = 1000;
-	const double mega = 1000000;
-	const double giga = 1000000000;
-	const double tera = 1000000000000;
-	const double peta = 1000000000000000;
-	const double exa  = 1000000000000000000;
-	// minimum diff value to display
-	const double min_diff = 0.001;
-    const byte maxNdigits = 2;
-	char suffix[2] = "";
-	bool decimal = true;
-	double dval;
+	const float SI_PREFIXES[] = { 1e-18, 1e-15, 1e-12, 1e-9, 1e-6, 1e-3, 1 };
+	const char* SI_SUFFIXES[] = { "E", "P", "T", "G", "M", "K", "" };
 
-	if (val >= exa) {
-		val /= peta;
-		dval = val / kilo;
-		strcpy(suffix, "E");
-	} else if (val >= peta) {
-		val /= tera;
-		dval = val / kilo;
-		strcpy(suffix, "P");
-	} else if (val >= tera) {
-		val /= giga;
-		dval = val / kilo;
-		strcpy(suffix, "T");
-	} else if (val >= giga) {
-		val /= mega;
-		dval = val / kilo;
-		strcpy(suffix, "G");
-	} else if (val >= mega) {
-		val /= kilo;
-		dval = val / kilo;
-		strcpy(suffix, "M");
-	} else if (val >= kilo) {
-		dval = val / kilo;
-		strcpy(suffix, "K");
-	} else {
-		dval = val;
-		if (dval < min_diff)
-			dval = 0.0;
+	int power = 6;  // Default to no prefix (1)
+	double scaled_value = val;
+
+	// Find the appropriate SI prefix
+	while (power >= 0) {
+		if (scaled_value >= SI_PREFIXES[power]) {
+			scaled_value /= SI_PREFIXES[power];
+			break;
+		}
+		power--;
 	}
 
-	if (!sigdigits) {
-		if (decimal)
-			snprintf(buf, bufsiz, "%.3f%s", dval, suffix);
-		else
-			snprintf(buf, bufsiz, "%d%s", (unsigned int)dval, suffix);
-	} else {
-		/* Always show sigdigits + 1, padded on right with zeroes
-		 * followed by suffix */
-		int ndigits = sigdigits - 1 - (dval > 0.0 ? floor(log10(dval)) : 0);
+	// Determine the number of digits before the decimal point
+	int num_digits = (scaled_value > 0.0) ? floor(log10(scaled_value)) + 1 : 1;
 
-		snprintf(buf, bufsiz, "%*.*f%s", sigdigits + 1, ndigits, dval, suffix);
+	if (num_digits < 1) num_digits = 1;
+
+	// Calculate the number of decimal places needed
+	int num_decimal_places = sigdigits - num_digits;
+	if (num_decimal_places < 0) num_decimal_places = 0;
+
+	// Format the value and suffix
+	int written = snprintf(buf, bufsiz, "%.*f%s", num_decimal_places, scaled_value, SI_SUFFIXES[power]);
+
+	if (written > bufsiz) {
+		// Handle the case where the buffer is too small
+		buf[bufsiz - 1] = '\0'; // Null-terminate the string to avoid overflow
 	}
 }

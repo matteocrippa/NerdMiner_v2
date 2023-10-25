@@ -9,7 +9,7 @@
 #define NERD_BLOCK_SIZE  64
 #define NERD_PAD_SIZE    56
 
-struct nerd_sha256 {
+DMA_ATTR struct nerd_sha256 {
     uint32_t  digest[NERD_DIGEST_SIZE / sizeof(uint32_t)];
     uint32_t  buffer[NERD_BLOCK_SIZE  / sizeof(uint32_t)];
     uint32_t  buffLen;   /* in bytes          */

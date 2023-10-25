@@ -38,11 +38,11 @@
 
 //--------------
 
-IRAM_ATTR static inline uint32_t rotlFixed(uint32_t x, uint32_t y)
+IRAM_ATTR FORCE_INLINE_ATTR uint32_t rotlFixed(uint32_t x, uint32_t y)
 {
     return (x << y) | (x >> (sizeof(y) * 8 - y));
 }
-IRAM_ATTR static inline uint32_t rotrFixed(uint32_t x, uint32_t y)
+IRAM_ATTR FORCE_INLINE_ATTR uint32_t rotrFixed(uint32_t x, uint32_t y)
 {
     return (x >> y) | (x << (sizeof(y) * 8 - y));
 }
@@ -111,7 +111,7 @@ DRAM_ATTR static const uint32_t K[64] = {
     0x682E6FF3L, 0x748F82EEL, 0x78A5636FL, 0x84C87814L, 0x8CC70208L,
     0x90BEFFFAL, 0xA4506CEBL, 0xBEF9A3F7L, 0xC67178F2L};
 
-IRAM_ATTR inline static int Transform_Sha256(nerd_sha256 *sha256, const uint8_t *data)
+IRAM_ATTR FORCE_INLINE_ATTR int Transform_Sha256(nerd_sha256 *sha256, const uint8_t *data)
 {
     uint32_t S[8], t0, t1;
     int i;
@@ -177,13 +177,13 @@ IRAM_ATTR inline static int Transform_Sha256(nerd_sha256 *sha256, const uint8_t 
     return 0;
 }
 
-IRAM_ATTR static uint32_t ByteReverseWord32(uint32_t value)
+IRAM_ATTR FORCE_INLINE_ATTR uint32_t ByteReverseWord32(uint32_t value)
 {
     value = ((value & 0xFF00FF00) >> 8) | ((value & 0x00FF00FF) << 8);
     return rotlFixed(value, 16U);
 }
 
-IRAM_ATTR static void ByteReverseWords(uint32_t *out, const uint32_t *in, uint32_t byteCount)
+IRAM_ATTR FORCE_INLINE_ATTR void ByteReverseWords(uint32_t *out, const uint32_t *in, uint32_t byteCount)
 {
     uint32_t count, i;
     count = byteCount / (uint32_t)sizeof(uint32_t);
@@ -191,7 +191,7 @@ IRAM_ATTR static void ByteReverseWords(uint32_t *out, const uint32_t *in, uint32
         out[i] = ByteReverseWord32(in[i]);
 }
 
-static int nerd_update(nerd_sha256 *sha256, uint8_t *data, uint32_t len)
+FORCE_INLINE_ATTR int nerd_update(nerd_sha256 *sha256, uint8_t *data, uint32_t len)
 {
     int ret = 0;
     uint32_t blocksLen;

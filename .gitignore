@@ -7,3 +7,5 @@ NerdMinerLog.txt
 bin/0x10000_firmware.bin
 logs
 boards/ESP32_wroom_guide.md
+.DS_Store
+src/.DS_Store
